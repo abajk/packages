@@ -25,7 +25,7 @@ define KernelPackage/usb-serial-xr_usb_serial_common
 	URL:=https://www.exar.com/content/document.ashx?id=21651
 	FILES:=$(PKG_BUILD_DIR)/xr_usb_serial_common-1a/xr_usb_serial_common.$(LINUX_KMOD_SUFFIX)
 	AUTOLOAD:=$(call AutoProbe,xr_usb_serial_common)
-	DEPENDS+=kmod-usb-serial
+	DEPENDS+=kmod-usb-serial @(LINUX_5_15||LINUX_6_1)
 endef
 
 define Build/Compile
