@@ -1,11 +1,11 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=pci_debug
-PKG_VERSION:=1.00
-PKG_RELEASE:=1
+PKG_VERSION:=1.0
+PKG_RELEASE:=2
 
 PKG_SOURCE:=pcie_debug-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=https://github.com/Martoni/pcie_debug/archive/refs/tags/$(PKG_SOURCE_VERSION)?
+PKG_SOURCE_URL:=https://github.com/Martoni/pcie_debug/archive/refs/tags/$(PKG_VERSION)?
 PKG_HASH:=3cbcdc58cc717d786cb775adf04dde2eaf96c93467eeb8a022e6cda5c7c6af46
 
 PKG_MAINTAINER:=Aleksander Jan Bajkowski <olek2@wp.pl>
