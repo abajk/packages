@@ -1,4 +1,4 @@
-From 211a22485715dbeb2c6add48a34c1b079945762a Mon Sep 17 00:00:00 2001
+From b6215914ca691604a873d79e0a9044d2d7c24a4c Mon Sep 17 00:00:00 2001
 From: Aleksander Jan Bajkowski <olek2@wp.pl>
 Date: Sun, 7 Sep 2025 18:20:18 +0200
 Subject: [PATCH] mdio: bench: add timeout parameter
@@ -23,14 +23,14 @@ index 0ddd381..fbc63fe 100644
  	      "    otherwise the current value in REG is read. REG is then read 1000\n"
  	      "    times. Any unexpected values are reported, along with the total time.\n"
 diff --git a/src/mdio/mdio.c b/src/mdio/mdio.c
-index 4677db6..a36ba4a 100644
+index 4677db6..63c25b7 100644
 --- a/src/mdio/mdio.c
 +++ b/src/mdio/mdio.c
 @@ -440,6 +440,7 @@ int mdio_common_bench_exec(struct mdio_device *dev, int argc, char **argv)
  	struct mdio_prog prog = MDIO_PROG_EMPTY;
  	struct timespec start;
  	uint32_t reg, val = 0;
-+	unsigned int timeout = 100;
++	uint16_t timeout = 64;
  	int err, loop;
  
  	err = mdio_device_parse_reg(dev, &argc, &argv, &reg, NULL);
