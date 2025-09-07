@@ -1,4 +1,4 @@
-From 02879e617630457d641e2bb6ebf0e79684427213 Mon Sep 17 00:00:00 2001
+From 566c4c2900427cac50a05a95599e501fc48ddb4f Mon Sep 17 00:00:00 2001
 From: Aleksander Jan Bajkowski <olek2@wp.pl>
 Date: Sun, 7 Sep 2025 18:20:18 +0200
 Subject: [PATCH] mdio: bench: add timeout parameter
@@ -29,7 +29,7 @@ index 56148fa..161e926 100644
  						    mdio_nl_validate_prog,
  						    0x1000),
 diff --git a/src/mdio/main.c b/src/mdio/main.c
-index 0ddd381..be9a34b 100644
+index 0ddd381..11811f6 100644
 --- a/src/mdio/main.c
 +++ b/src/mdio/main.c
 @@ -17,6 +17,7 @@ int usage(int rc, FILE *fp)
@@ -45,7 +45,7 @@ index 0ddd381..be9a34b 100644
  	      "    MASK: u16\n"
  	      "\n"
 - 	      "  bench REG [DATA]\n"
-+	      "  bench REG [DATA] [timeout TIMEOUT]\n"
++	      "  bench REG [DATA]\n"
  	      "    Benchmark read performance. If DATA is supplied, it is written to REG,\n"
  	      "    otherwise the current value in REG is read. REG is then read 1000\n"
  	      "    times. Any unexpected values are reported, along with the total time.\n"
