@@ -1,0 +1,282 @@
+From 566c4c2900427cac50a05a95599e501fc48ddb4f Mon Sep 17 00:00:00 2001
+From: Aleksander Jan Bajkowski <olek2@wp.pl>
+Date: Sun, 7 Sep 2025 18:20:18 +0200
+Subject: [PATCH] mdio: bench: add timeout parameter
+
+Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
+---
+ kernel/mdio-netlink.c |  2 +-
+ src/mdio/main.c       | 15 ++++++++++-----
+ src/mdio/mdio.c       |  9 +++++----
+ src/mdio/mdio.h       |  9 +++++----
+ src/mdio/mva.c        |  4 ++--
+ src/mdio/mvls.c       |  4 ++--
+ src/mdio/phy.c        | 16 ++++++++--------
+ src/mdio/xrs.c        |  4 ++--
+ 8 files changed, 35 insertions(+), 28 deletions(-)
+
+diff --git a/kernel/mdio-netlink.c b/kernel/mdio-netlink.c
+index 56148fa..161e926 100644
+--- a/kernel/mdio-netlink.c
++++ b/kernel/mdio-netlink.c
+@@ -285,7 +285,7 @@ static int mdio_nl_validate_prog(const struct nlattr *attr,
+ static const struct nla_policy mdio_nl_policy[MDIO_NLA_MAX + 1] = {
+ 	[MDIO_NLA_UNSPEC]  = { .type = NLA_UNSPEC, },
+ 	[MDIO_NLA_BUS_ID]  = { .type = NLA_STRING, .len = MII_BUS_ID_SIZE },
+-	[MDIO_NLA_TIMEOUT] = NLA_POLICY_MAX(NLA_U16, 10 * MSEC_PER_SEC),
++	[MDIO_NLA_TIMEOUT] = NLA_POLICY_MAX(NLA_U16, 65 * MSEC_PER_SEC),
+ 	[MDIO_NLA_PROG]    = NLA_POLICY_VALIDATE_FN(NLA_BINARY,
+ 						    mdio_nl_validate_prog,
+ 						    0x1000),
+diff --git a/src/mdio/main.c b/src/mdio/main.c
+index 0ddd381..11811f6 100644
+--- a/src/mdio/main.c
++++ b/src/mdio/main.c
+@@ -17,6 +17,7 @@ int usage(int rc, FILE *fp)
+ 	      "\n"
+ 	      "OPTIONS\n"
+ 	      "  -h   This help text\n"
++	      "  -t   Timeout value\n"
+ 	      "  -v   Show verision and contact information\n"
+ 	      "\n"
+ 	      "Bus names may be abbreviated using glob(3) syntax, i.e. \"fixed*\"\n"
+@@ -65,7 +66,7 @@ int usage(int rc, FILE *fp)
+ 	      "    DATA: u16\n"
+ 	      "    MASK: u16\n"
+ 	      "\n"
+- 	      "  bench REG [DATA]\n"
++	      "  bench REG [DATA]\n"
+ 	      "    Benchmark read performance. If DATA is supplied, it is written to REG,\n"
+ 	      "    otherwise the current value in REG is read. REG is then read 1000\n"
+ 	      "    times. Any unexpected values are reported, along with the total time.\n"
+@@ -124,12 +125,16 @@ int main(int argc, char **argv)
+ {
+ 	struct cmd *cmd;
+ 	char *arg, *bus;
++	unsigned long long timeout = 0;
+ 	int opt;
+ 
+-	while ((opt = getopt(argc, argv, "hv")) != -1) {
++	while ((opt = getopt(argc, argv, "ht:v")) != -1) {
+ 		switch (opt) {
+ 		case 'h':
+ 			return usage(0, stdout);
++		case 't':
++			timeout = atoi(optarg);
++			break;
+ 		case 'v':
+ 			return version();
+ 		default:
+@@ -170,14 +175,14 @@ int main(int argc, char **argv)
+ 	for (cmd = &cmds_start; cmd < &cmds_end; cmd++) {
+ 		if (!strcmp(cmd->name, arg)) {
+ 			argv_pop(&argc, &argv);
+-			return cmd->exec(bus, argc, argv) ? 1 : 0;
++			return cmd->exec(bus, argc, argv, timeout) ? 1 : 0;
+ 		}
+ 	}
+ 
+ 	/* Allow the driver name to be omitted in the common phy/mmd
+ 	 * case. */
+ 	if (strchr(arg, ':'))
+-		return mmd_exec(bus, argc, argv) ? 1 : 0;
++		return mmd_exec(bus, argc, argv, timeout) ? 1 : 0;
+ 	else
+-		return phy_exec(bus, argc, argv) ? 1 : 0;
++		return phy_exec(bus, argc, argv, timeout) ? 1 : 0;
+ }
+diff --git a/src/mdio/mdio.c b/src/mdio/mdio.c
+index 4677db6..f5269b9 100644
+--- a/src/mdio/mdio.c
++++ b/src/mdio/mdio.c
+@@ -435,7 +435,7 @@ int mdio_common_bench_cb(uint32_t *data, int len, int err, void *_start)
+ 	return err;
+ }
+ 
+-int mdio_common_bench_exec(struct mdio_device *dev, int argc, char **argv)
++int mdio_common_bench_exec(struct mdio_device *dev, int argc, char **argv, int timeout)
+ {
+ 	struct mdio_prog prog = MDIO_PROG_EMPTY;
+ 	struct timespec start;
+@@ -483,7 +483,8 @@ int mdio_common_bench_exec(struct mdio_device *dev, int argc, char **argv)
+ 	mdio_prog_push(&prog, INSN(JNE, REG(6), IMM(1000), GOTO(prog.len, loop)));
+ 
+ 	clock_gettime(CLOCK_MONOTONIC, &start);
+-	err = mdio_xfer_timeout(dev->bus, &prog, mdio_common_bench_cb, &start, 10000);
++	err = mdio_xfer_timeout(dev->bus, &prog, mdio_common_bench_cb, &start,
++				timeout > 0 ? timeout * 1000 : 10000);
+ 	free(prog.insns);
+ 	if (err) {
+ 		fprintf(stderr, "ERROR: Bench operation failed (%d)\n", err);
+@@ -556,7 +557,7 @@ int mdio_common_dump_exec(struct mdio_device *dev, int argc, char **argv)
+ 	return 0;
+ }
+ 
+-int mdio_common_exec(struct mdio_device *dev, int argc, char **argv)
++int mdio_common_exec(struct mdio_device *dev, int argc, char **argv, int timeout)
+ {
+ 	if (!argc)
+ 		return 1;
+@@ -566,7 +567,7 @@ int mdio_common_exec(struct mdio_device *dev, int argc, char **argv)
+ 		return mdio_common_raw_exec(dev, argc, argv);
+ 	} else if (!strcmp(argv[0], "bench")) {
+ 		argv_pop(&argc, &argv);
+-		return mdio_common_bench_exec(dev, argc, argv);
++		return mdio_common_bench_exec(dev, argc, argv, timeout);
+ 	} else if (!strcmp(argv[0], "dump")) {
+ 		argv_pop(&argc, &argv);
+ 		return mdio_common_dump_exec(dev, argc, argv);
+diff --git a/src/mdio/mdio.h b/src/mdio/mdio.h
+index 684be7f..b4017a7 100644
+--- a/src/mdio/mdio.h
++++ b/src/mdio/mdio.h
+@@ -52,7 +52,7 @@ static inline char *argv_pop(int *argcp, char ***argvp)
+ 
+ struct cmd {
+ 	const char *name;
+-	int (*exec)(const char *bus, int argc, char **argv);
++	int (*exec)(const char *bus, int argc, char **argv, int timeout);
+ };
+ 
+ // Derived from https://stackoverflow.com/a/4152185
+@@ -152,12 +152,13 @@ struct mdio_driver {
+ 			 uint32_t *val, uint32_t *mask);
+ };
+ 
+-int mdio_common_exec(struct mdio_device *dev, int argc, char **argv);
++int mdio_common_exec(struct mdio_device *dev, int argc, char **argv,
++		     int timeout);
+ 
+ int bus_status(const char *bus);
+ int bus_list(void);
+ 
+-int phy_exec(const char *bus, int argc, char **argv);
+-int mmd_exec(const char *bus, int argc, char **argv);
++int phy_exec(const char *bus, int argc, char **argv, int timeout);
++int mmd_exec(const char *bus, int argc, char **argv, int timeout);
+ 
+ #endif	/* _LIBMDIO_H */
+diff --git a/src/mdio/mva.c b/src/mdio/mva.c
+index c321726..4091ee3 100644
+--- a/src/mdio/mva.c
++++ b/src/mdio/mva.c
+@@ -169,7 +169,7 @@ int mva_exec_status(struct mva_device *pdev, int argc, char **argv)
+ 	return 0;
+ }
+ 
+-int mva_exec(const char *bus, int argc, char **argv)
++int mva_exec(const char *bus, int argc, char **argv, int timeout)
+ {
+ 	struct mva_device pdev = {
+ 		.dev = {
+@@ -192,6 +192,6 @@ int mva_exec(const char *bus, int argc, char **argv)
+ 	if (!arg || !strcmp(arg, "status"))
+ 		return mva_exec_status(&pdev, argc, argv);
+ 
+-	return mdio_common_exec(&pdev.dev, argc, argv);
++	return mdio_common_exec(&pdev.dev, argc, argv, timeout);
+ }
+ DEFINE_CMD("mva", mva_exec);
+diff --git a/src/mdio/mvls.c b/src/mdio/mvls.c
+index 984e643..04dcbce 100644
+--- a/src/mdio/mvls.c
++++ b/src/mdio/mvls.c
+@@ -515,7 +515,7 @@ struct mdio_driver mvls_driver = {
+ 	.parse_reg = mvls_parse_reg,
+ };
+ 
+-static int mvls_exec(const char *bus, int argc, char **argv)
++static int mvls_exec(const char *bus, int argc, char **argv, int timeout)
+ {
+ 	struct mvls_device mdev = {
+ 		.dev = {
+@@ -545,6 +545,6 @@ static int mvls_exec(const char *bus, int argc, char **argv)
+ 	if (!strcmp(arg, "lag"))
+ 		return mvls_lag_exec(&mdev.dev, argc, argv);
+ 
+-	return mdio_common_exec(&mdev.dev, argc, argv);
++	return mdio_common_exec(&mdev.dev, argc, argv, timeout);
+ }
+ DEFINE_CMD("mvls", mvls_exec);
+diff --git a/src/mdio/phy.c b/src/mdio/phy.c
+index 2dad7b7..57c61f8 100644
+--- a/src/mdio/phy.c
++++ b/src/mdio/phy.c
+@@ -82,7 +82,7 @@ int phy_exec_status(struct phy_device *pdev, int argc, char **argv)
+ 	return 0;
+ }
+ 
+-int phy_exec(const char *bus, int argc, char **argv)
++int phy_exec(const char *bus, int argc, char **argv, int timeout)
+ {
+ 	struct phy_device pdev = {
+ 		.dev = {
+@@ -106,7 +106,7 @@ int phy_exec(const char *bus, int argc, char **argv)
+ 	if (!arg || !strcmp(arg, "status"))
+ 		return phy_exec_status(&pdev, argc, argv);
+ 
+-	return mdio_common_exec(&pdev.dev, argc, argv);
++	return mdio_common_exec(&pdev.dev, argc, argv, timeout);
+ }
+ DEFINE_CMD("phy", phy_exec);
+ 
+@@ -196,7 +196,7 @@ int mmd_exec_status(struct phy_device *pdev, int argc, char **argv)
+ }
+ 
+ int mmd_exec_with(const struct mdio_driver *drv,
+-		  const char *bus, int argc, char **argv)
++		  const char *bus, int argc, char **argv, int timeout)
+ {
+ 	struct phy_device pdev = {
+ 		.dev = {
+@@ -225,12 +225,12 @@ int mmd_exec_with(const struct mdio_driver *drv,
+ 	if (!arg || !strcmp(arg, "status"))
+ 		return mmd_exec_status(&pdev, argc, argv);
+ 
+-	return mdio_common_exec(&pdev.dev, argc, argv);
++	return mdio_common_exec(&pdev.dev, argc, argv, timeout);
+ }
+ 
+-int mmd_exec(const char *bus, int argc, char **argv)
++int mmd_exec(const char *bus, int argc, char **argv, int timeout)
+ {
+-	return mmd_exec_with(&phy_driver, bus, argc, argv);
++	return mmd_exec_with(&phy_driver, bus, argc, argv, timeout);
+ }
+ DEFINE_CMD("mmd", mmd_exec);
+ 
+@@ -279,8 +279,8 @@ static const struct mdio_driver mmd_c22_driver = {
+ 	.write = mmd_c22_write,
+ };
+ 
+-int mmd_c22_exec(const char *bus, int argc, char **argv)
++int mmd_c22_exec(const char *bus, int argc, char **argv, int timeout)
+ {
+-	return mmd_exec_with(&mmd_c22_driver, bus, argc, argv);
++	return mmd_exec_with(&mmd_c22_driver, bus, argc, argv, timeout);
+ }
+ DEFINE_CMD("mmd-c22", mmd_c22_exec);
+diff --git a/src/mdio/xrs.c b/src/mdio/xrs.c
+index 7a51e81..ae92764 100644
+--- a/src/mdio/xrs.c
++++ b/src/mdio/xrs.c
+@@ -42,7 +42,7 @@ static const struct mdio_driver xrs_driver = {
+ 	.write = xrs_write,
+ };
+ 
+-int xrs_exec(const char *bus, int argc, char **argv)
++int xrs_exec(const char *bus, int argc, char **argv, int timeout)
+ {
+ 	struct xrs_device xdev = {
+ 		.dev = {
+@@ -66,6 +66,6 @@ int xrs_exec(const char *bus, int argc, char **argv)
+ 	if (!arg)
+ 		return 1;
+ 
+-	return mdio_common_exec(&xdev.dev, argc, argv);
++	return mdio_common_exec(&xdev.dev, argc, argv, timeout);
+ }
+ DEFINE_CMD("xrs", xrs_exec);
+-- 
+2.47.3
+

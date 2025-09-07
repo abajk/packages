@@ -1,0 +1,26 @@
+From 3a9509963b2b709b43167e168c928e5e3deebf04 Mon Sep 17 00:00:00 2001
+From: Aleksander Jan Bajkowski <olek2@wp.pl>
+Date: Sun, 7 Sep 2025 21:55:53 +0200
+Subject: [PATCH] mdio: longer timeout
+
+Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
+---
+ src/mdio/mdio.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/mdio/mdio.c b/src/mdio/mdio.c
+index 4677db6..0bcc9c5 100644
+--- a/src/mdio/mdio.c
++++ b/src/mdio/mdio.c
+@@ -630,7 +630,7 @@ int mdio_xfer_timeout(const char *bus, struct mdio_prog *prog,
+ int mdio_xfer(const char *bus, struct mdio_prog *prog,
+ 	      mdio_xfer_cb_t cb, void *arg)
+ {
+-	return mdio_xfer_timeout(bus, prog, cb, arg, 1000);
++	return mdio_xfer_timeout(bus, prog, cb, arg, 10000);
+ }
+ 
+ int mdio_for_each(const char *match,
+-- 
+2.47.3
+
