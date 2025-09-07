@@ -1,13 +1,13 @@
-From b6215914ca691604a873d79e0a9044d2d7c24a4c Mon Sep 17 00:00:00 2001
+From be047dfde9f9c59eae03bdf639dc9c71270498cb Mon Sep 17 00:00:00 2001
 From: Aleksander Jan Bajkowski <olek2@wp.pl>
 Date: Sun, 7 Sep 2025 18:20:18 +0200
 Subject: [PATCH] mdio: bench: add timeout parameter
 
 Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
 ---
- src/mdio/main.c | 2 +-
- src/mdio/mdio.c | 3 ++-
- 2 files changed, 3 insertions(+), 2 deletions(-)
+ src/mdio/main.c |  2 +-
+ src/mdio/mdio.c | 16 +++++++++++++++-
+ 2 files changed, 16 insertions(+), 2 deletions(-)
 
 diff --git a/src/mdio/main.c b/src/mdio/main.c
 index 0ddd381..fbc63fe 100644
@@ -23,23 +23,45 @@ index 0ddd381..fbc63fe 100644
  	      "    otherwise the current value in REG is read. REG is then read 1000\n"
  	      "    times. Any unexpected values are reported, along with the total time.\n"
 diff --git a/src/mdio/mdio.c b/src/mdio/mdio.c
-index 4677db6..63c25b7 100644
+index 4677db6..61469f1 100644
 --- a/src/mdio/mdio.c
 +++ b/src/mdio/mdio.c
-@@ -440,6 +440,7 @@ int mdio_common_bench_exec(struct mdio_device *dev, int argc, char **argv)
+@@ -324,6 +324,14 @@ int mdio_device_parse_val(struct mdio_device *dev, int *argcp, char ***argvp,
+ 	return mdio_device_dflt_parse_val(dev, argcp, argvp, val, mask);
+ }
+ 
++int mdio_device_parse_timeout(struct mdio_device *dev, int *argcp, char ***argvp,
++			  uint32_t *regs, uint32_t *rege)
++{
++	/* TODO: Implement me */
++
++	return 0;
++}
++
+ int mdio_common_raw_read_cb(uint32_t *data, int len, int err, void *_null)
+ {
+ 	if (len != 1)
+@@ -440,8 +448,13 @@ int mdio_common_bench_exec(struct mdio_device *dev, int argc, char **argv)
  	struct mdio_prog prog = MDIO_PROG_EMPTY;
  	struct timespec start;
  	uint32_t reg, val = 0;
-+	uint16_t timeout = 64;
++	uint16_t timeout = 10;
  	int err, loop;
  
++	err = mdio_device_parse_timeout(dev, &argc, &argv, &timeout);
++	if (err)
++		return err;
++
  	err = mdio_device_parse_reg(dev, &argc, &argv, &reg, NULL);
-@@ -483,7 +484,7 @@ int mdio_common_bench_exec(struct mdio_device *dev, int argc, char **argv)
+ 	if (err)
+ 		return err;
+@@ -483,7 +496,8 @@ int mdio_common_bench_exec(struct mdio_device *dev, int argc, char **argv)
  	mdio_prog_push(&prog, INSN(JNE, REG(6), IMM(1000), GOTO(prog.len, loop)));
  
  	clock_gettime(CLOCK_MONOTONIC, &start);
 -	err = mdio_xfer_timeout(dev->bus, &prog, mdio_common_bench_cb, &start, 10000);
-+	err = mdio_xfer_timeout(dev->bus, &prog, mdio_common_bench_cb, &start, timeout * 1000);
++	err = mdio_xfer_timeout(dev->bus, &prog, mdio_common_bench_cb, &start,
++				timeout * MSEC_PER_SEC);
  	free(prog.insns);
  	if (err) {
  		fprintf(stderr, "ERROR: Bench operation failed (%d)\n", err);
