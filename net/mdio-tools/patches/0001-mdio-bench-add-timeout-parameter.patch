@@ -1,19 +1,33 @@
-From bf54894d37245e9d373d17f9c45b010ed28fe148 Mon Sep 17 00:00:00 2001
+From 02879e617630457d641e2bb6ebf0e79684427213 Mon Sep 17 00:00:00 2001
 From: Aleksander Jan Bajkowski <olek2@wp.pl>
 Date: Sun, 7 Sep 2025 18:20:18 +0200
 Subject: [PATCH] mdio: bench: add timeout parameter
 
 Signed-off-by: Aleksander Jan Bajkowski <olek2@wp.pl>
 ---
- src/mdio/main.c | 15 ++++++++++-----
- src/mdio/mdio.c |  9 +++++----
- src/mdio/mdio.h |  9 +++++----
- src/mdio/mva.c  |  4 ++--
- src/mdio/mvls.c |  4 ++--
- src/mdio/phy.c  | 16 ++++++++--------
- src/mdio/xrs.c  |  4 ++--
- 7 files changed, 34 insertions(+), 27 deletions(-)
+ kernel/mdio-netlink.c |  2 +-
+ src/mdio/main.c       | 15 ++++++++++-----
+ src/mdio/mdio.c       |  9 +++++----
+ src/mdio/mdio.h       |  9 +++++----
+ src/mdio/mva.c        |  4 ++--
+ src/mdio/mvls.c       |  4 ++--
+ src/mdio/phy.c        | 16 ++++++++--------
+ src/mdio/xrs.c        |  4 ++--
+ 8 files changed, 35 insertions(+), 28 deletions(-)
 
+diff --git a/kernel/mdio-netlink.c b/kernel/mdio-netlink.c
+index 56148fa..161e926 100644
+--- a/kernel/mdio-netlink.c
++++ b/kernel/mdio-netlink.c
+@@ -285,7 +285,7 @@ static int mdio_nl_validate_prog(const struct nlattr *attr,
+ static const struct nla_policy mdio_nl_policy[MDIO_NLA_MAX + 1] = {
+ 	[MDIO_NLA_UNSPEC]  = { .type = NLA_UNSPEC, },
+ 	[MDIO_NLA_BUS_ID]  = { .type = NLA_STRING, .len = MII_BUS_ID_SIZE },
+-	[MDIO_NLA_TIMEOUT] = NLA_POLICY_MAX(NLA_U16, 10 * MSEC_PER_SEC),
++	[MDIO_NLA_TIMEOUT] = NLA_POLICY_MAX(NLA_U16, 65 * MSEC_PER_SEC),
+ 	[MDIO_NLA_PROG]    = NLA_POLICY_VALIDATE_FN(NLA_BINARY,
+ 						    mdio_nl_validate_prog,
+ 						    0x1000),
 diff --git a/src/mdio/main.c b/src/mdio/main.c
 index 0ddd381..be9a34b 100644
 --- a/src/mdio/main.c
