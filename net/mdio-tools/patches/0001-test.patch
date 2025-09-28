@@ -1,0 +1,157 @@
+From a1e94110682213c2478e27c29e3ba1dc684c3f1e Mon Sep 17 00:00:00 2001
+From: Aleksander Jan Bajkowski <olek2@wp.pl>
+Date: Sun, 28 Sep 2025 23:31:00 +0200
+Subject: [PATCH] test
+
+---
+ kernel/mdio-netlink.c |  2 +-
+ src/mdio/mdio.c       | 36 +++++++++++++++++++++++++++++++++---
+ 2 files changed, 34 insertions(+), 4 deletions(-)
+
+diff --git a/kernel/mdio-netlink.c b/kernel/mdio-netlink.c
+index 56148fa..66f6d4f 100644
+--- a/kernel/mdio-netlink.c
++++ b/kernel/mdio-netlink.c
+@@ -288,7 +288,7 @@ static const struct nla_policy mdio_nl_policy[MDIO_NLA_MAX + 1] = {
+ 	[MDIO_NLA_TIMEOUT] = NLA_POLICY_MAX(NLA_U16, 10 * MSEC_PER_SEC),
+ 	[MDIO_NLA_PROG]    = NLA_POLICY_VALIDATE_FN(NLA_BINARY,
+ 						    mdio_nl_validate_prog,
+-						    0x1000),
++						    0x10000),
+ 	[MDIO_NLA_DATA]    = { .type = NLA_NESTED },
+ 	[MDIO_NLA_ERROR]   = { .type = NLA_S32, },
+ };
+diff --git a/src/mdio/mdio.c b/src/mdio/mdio.c
+index 4677db6..3fd1ed2 100644
+--- a/src/mdio/mdio.c
++++ b/src/mdio/mdio.c
+@@ -16,8 +16,8 @@
+ 
+ #include "mdio.h"
+ 
+-static char buf[0x1000] __attribute__ ((aligned (NLMSG_ALIGNTO)));
+-static const size_t len = 0x1000;
++static char buf[0x10000] __attribute__ ((aligned (NLMSG_ALIGNTO)));
++static const size_t len = 0x10000;
+ static uint16_t mdio_family;
+ 
+ static int parse_attrs(const struct nlattr *attr, void *data)
+@@ -61,16 +61,23 @@ static int msg_recv(struct mnl_socket *nl, mnl_cb_t callback, void *data, int se
+ 	unsigned int portid;
+ 	int ret;
+ 
++	printf("%s:1\n", __func__);
+ 	portid = mnl_socket_get_portid(nl);
+ 
++	printf("%s:2\n", __func__);
++	errno = 0;
+ 	ret = mnl_socket_recvfrom(nl, buf, len);
++	printf("%s:3 ret=%d errno=%d\n", __func__, ret, errno);
+ 	while (ret > 0) {
+ 		ret = mnl_cb_run(buf, ret, seq, portid, callback, data);
+ 		if (ret <= 0)
+ 			break;
++		errno = 0;
+ 		ret = mnl_socket_recvfrom(nl, buf, len);
++		printf("%s:4 ret=%d errno=%d\n", __func__, ret, errno);
+ 	}
+ 
++	printf("%s:5 ret=%d\n", __func__, ret);
+ 	return ret;
+ }
+ 
+@@ -80,15 +87,23 @@ static int msg_query(struct nlmsghdr *nlh, mnl_cb_t callback, void *data)
+ 	struct mnl_socket *nl;
+ 	int ret;
+ 
++	printf("%s:1\n", __func__);
++
+ 	seq = time(NULL);
+ 	nlh->nlmsg_seq = seq;
+ 
++	printf("%s:2\n", __func__);
++
+ 	nl = msg_send(NETLINK_GENERIC, nlh);
+ 	if (!nl)
+ 		return -ENOTSUP;
+ 
++	printf("%s:3\n", __func__);
++
+ 	ret = msg_recv(nl, callback, data, seq);
+ 	mnl_socket_close(nl);
++
++	printf("%s:4 ret=%d\n", __func__, ret);
+ 	return ret;
+ }
+ 
+@@ -503,8 +518,11 @@ int mdio_common_dump_cb(uint32_t *data, int len, int err, void *_range)
+ 	struct reg_range *range = _range;
+ 	uint32_t reg;
+ 
+-	if (len != (int)(range->end - range->start + 1))
++	printf("%s:1\n", __func__);
++	if (len != (int)(range->end - range->start + 1)) {
++		printf("%s:2\n", __func__);
+ 		return 1;
++	}
+ 
+ 	for (reg = range->start; reg <= range->end; reg++)
+ 		printf("0x%04x: 0x%04x\n", reg, *data++);
+@@ -519,10 +537,12 @@ int mdio_common_dump_exec_one(struct mdio_device *dev, int *argc, char ***argv)
+ 	uint32_t reg;
+ 	int err;
+ 
++	printf("%s:1\n", __func__);
+ 	err = mdio_device_parse_reg(dev, argc, argv, &range.start, &range.end);
+ 	if (err)
+ 		return err;
+ 
++	printf("%s:2\n", __func__);
+ 	/* Can't emit a loop, since there's no way to pass the (mdio)
+ 	 * register in a (mdio-netlink) register - so we unroll it. */
+ 	for (reg = range.start; reg <= range.end; reg++) {
+@@ -533,6 +553,8 @@ int mdio_common_dump_exec_one(struct mdio_device *dev, int *argc, char ***argv)
+ 		mdio_prog_push(&prog, INSN(EMIT, REG(0), 0, 0));
+ 	}
+ 
++	printf("%s:3\n", __func__);
++
+ 	err = mdio_xfer_timeout(dev->bus, &prog, mdio_common_dump_cb, &range, 10000);
+ 	free(prog.insns);
+ 	if (err) {
+@@ -540,6 +562,8 @@ int mdio_common_dump_exec_one(struct mdio_device *dev, int *argc, char ***argv)
+ 		return 1;
+ 	}
+ 
++	printf("%s:4\n", __func__);
++
+ 	return 0;
+ }
+ 
+@@ -613,17 +637,23 @@ int mdio_xfer_timeout(const char *bus, struct mdio_prog *prog,
+ 	struct nlmsghdr *nlh;
+ 	int err;
+ 
++	printf("%s:1\n", __func__);
+ 	nlh = msg_init(MDIO_GENL_XFER, NLM_F_REQUEST | NLM_F_ACK);
+ 	if (!nlh)
+ 		return -ENOMEM;
+ 
++	printf("%s:2\n", __func__);
+ 	mnl_attr_put_strz(nlh, MDIO_NLA_BUS_ID, bus);
++	printf("%s:3 len=%d, size=%ld\n", __func__, prog->len, sizeof(*prog->insns));
+ 	mnl_attr_put(nlh, MDIO_NLA_PROG, prog->len * sizeof(*prog->insns),
+ 		     prog->insns);
+ 
++	printf("%s:4\n", __func__);
+ 	mnl_attr_put_u16(nlh, MDIO_NLA_TIMEOUT, timeout_ms);
+ 
++	printf("%s:5\n", __func__);
+ 	err = msg_query(nlh, mdio_xfer_cb, &xfer);
++	printf("%s:6 xfer.err=%d, err=%d\n", __func__, xfer.err, err);
+ 	return xfer.err ? : err;
+ }
+ 
+-- 
+2.47.3
+
