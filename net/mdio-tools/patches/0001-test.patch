@@ -1,17 +1,72 @@
-From 298eb33e353db3891f6b07d8225aa4942be4fa61 Mon Sep 17 00:00:00 2001
+From 54b29af0740ef1a0353a797ee309ac033d58aeb1 Mon Sep 17 00:00:00 2001
 From: Aleksander Jan Bajkowski <olek2@wp.pl>
 Date: Sun, 28 Sep 2025 23:31:00 +0200
 Subject: [PATCH] test
 
 ---
- src/mdio/mdio.c | 2 ++
- 1 file changed, 2 insertions(+)
+ src/mdio/mdio.c | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
 diff --git a/src/mdio/mdio.c b/src/mdio/mdio.c
-index 4677db6..342e85d 100644
+index 4677db6..8388ab6 100644
 --- a/src/mdio/mdio.c
 +++ b/src/mdio/mdio.c
-@@ -623,7 +623,9 @@ int mdio_xfer_timeout(const char *bus, struct mdio_prog *prog,
+@@ -80,15 +80,23 @@ static int msg_query(struct nlmsghdr *nlh, mnl_cb_t callback, void *data)
+ 	struct mnl_socket *nl;
+ 	int ret;
+ 
++	printf("%s:1\n", __func__);
++
+ 	seq = time(NULL);
+ 	nlh->nlmsg_seq = seq;
+ 
++	printf("%s:2\n", __func__);
++
+ 	nl = msg_send(NETLINK_GENERIC, nlh);
+ 	if (!nl)
+ 		return -ENOTSUP;
+ 
++	printf("%s:3\n", __func__);
++
+ 	ret = msg_recv(nl, callback, data, seq);
+ 	mnl_socket_close(nl);
++
++	printf("%s:4 ret=%d\n", __func__, ret);
+ 	return ret;
+ }
+ 
+@@ -519,10 +527,12 @@ int mdio_common_dump_exec_one(struct mdio_device *dev, int *argc, char ***argv)
+ 	uint32_t reg;
+ 	int err;
+ 
++	printf("%s:1\n", __func__);
+ 	err = mdio_device_parse_reg(dev, argc, argv, &range.start, &range.end);
+ 	if (err)
+ 		return err;
+ 
++	printf("%s:2\n", __func__);
+ 	/* Can't emit a loop, since there's no way to pass the (mdio)
+ 	 * register in a (mdio-netlink) register - so we unroll it. */
+ 	for (reg = range.start; reg <= range.end; reg++) {
+@@ -533,6 +543,8 @@ int mdio_common_dump_exec_one(struct mdio_device *dev, int *argc, char ***argv)
+ 		mdio_prog_push(&prog, INSN(EMIT, REG(0), 0, 0));
+ 	}
+ 
++	printf("%s:3\n", __func__);
++
+ 	err = mdio_xfer_timeout(dev->bus, &prog, mdio_common_dump_cb, &range, 10000);
+ 	free(prog.insns);
+ 	if (err) {
+@@ -540,6 +552,8 @@ int mdio_common_dump_exec_one(struct mdio_device *dev, int *argc, char ***argv)
+ 		return 1;
+ 	}
+ 
++	printf("%s:4\n", __func__);
++
+ 	return 0;
+ }
+ 
+@@ -623,7 +637,9 @@ int mdio_xfer_timeout(const char *bus, struct mdio_prog *prog,
  
  	mnl_attr_put_u16(nlh, MDIO_NLA_TIMEOUT, timeout_ms);
  
