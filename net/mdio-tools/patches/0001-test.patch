@@ -1,14 +1,14 @@
-From 54b29af0740ef1a0353a797ee309ac033d58aeb1 Mon Sep 17 00:00:00 2001
+From ac07d1deb34191b71dcf2f6615fba14a0eb55aad Mon Sep 17 00:00:00 2001
 From: Aleksander Jan Bajkowski <olek2@wp.pl>
 Date: Sun, 28 Sep 2025 23:31:00 +0200
 Subject: [PATCH] test
 
 ---
- src/mdio/mdio.c | 16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
+ src/mdio/mdio.c | 19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
 
 diff --git a/src/mdio/mdio.c b/src/mdio/mdio.c
-index 4677db6..8388ab6 100644
+index 4677db6..8ceaed5 100644
 --- a/src/mdio/mdio.c
 +++ b/src/mdio/mdio.c
 @@ -80,15 +80,23 @@ static int msg_query(struct nlmsghdr *nlh, mnl_cb_t callback, void *data)
@@ -66,13 +66,26 @@ index 4677db6..8388ab6 100644
  	return 0;
  }
  
-@@ -623,7 +637,9 @@ int mdio_xfer_timeout(const char *bus, struct mdio_prog *prog,
- 
- 	mnl_attr_put_u16(nlh, MDIO_NLA_TIMEOUT, timeout_ms);
+@@ -613,17 +627,22 @@ int mdio_xfer_timeout(const char *bus, struct mdio_prog *prog,
+ 	struct nlmsghdr *nlh;
+ 	int err;
  
 +	printf("%s:1\n", __func__);
+ 	nlh = msg_init(MDIO_GENL_XFER, NLM_F_REQUEST | NLM_F_ACK);
+ 	if (!nlh)
+ 		return -ENOMEM;
+ 
++	printf("%s:2\n", __func__);
+ 	mnl_attr_put_strz(nlh, MDIO_NLA_BUS_ID, bus);
+ 	mnl_attr_put(nlh, MDIO_NLA_PROG, prog->len * sizeof(*prog->insns),
+ 		     prog->insns);
+ 
++	printf("%s:3\n", __func__);
+ 	mnl_attr_put_u16(nlh, MDIO_NLA_TIMEOUT, timeout_ms);
+ 
++	printf("%s:4\n", __func__);
  	err = msg_query(nlh, mdio_xfer_cb, &xfer);
-+	printf("%s:2 xfer.err=%d, err=%d\n", __func__, xfer.err, err);
++	printf("%s:5 xfer.err=%d, err=%d\n", __func__, xfer.err, err);
  	return xfer.err ? : err;
  }
  
