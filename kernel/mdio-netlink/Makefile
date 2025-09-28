@@ -3,7 +3,7 @@ include $(INCLUDE_DIR)/kernel.mk
 
 PKG_NAME:=mdio-netlink
 PKG_VERSION:=1.3.1
-PKG_RELEASE:=11
+PKG_RELEASE:=12
 
 PKG_SOURCE_URL:=https://github.com/wkz/mdio-tools
 PKG_SOURCE_PROTO:=git
