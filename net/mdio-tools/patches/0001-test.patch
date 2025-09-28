@@ -1,17 +1,38 @@
-From ac07d1deb34191b71dcf2f6615fba14a0eb55aad Mon Sep 17 00:00:00 2001
+From 80d497c28a3de1823acbaadd547bbd4b06032cad Mon Sep 17 00:00:00 2001
 From: Aleksander Jan Bajkowski <olek2@wp.pl>
 Date: Sun, 28 Sep 2025 23:31:00 +0200
 Subject: [PATCH] test
 
 ---
- src/mdio/mdio.c | 19 +++++++++++++++++++
- 1 file changed, 19 insertions(+)
+ src/mdio/mdio.c | 24 ++++++++++++++++++++++++
+ 1 file changed, 24 insertions(+)
 
 diff --git a/src/mdio/mdio.c b/src/mdio/mdio.c
-index 4677db6..8ceaed5 100644
+index 4677db6..e3fa852 100644
 --- a/src/mdio/mdio.c
 +++ b/src/mdio/mdio.c
-@@ -80,15 +80,23 @@ static int msg_query(struct nlmsghdr *nlh, mnl_cb_t callback, void *data)
+@@ -61,9 +61,12 @@ static int msg_recv(struct mnl_socket *nl, mnl_cb_t callback, void *data, int se
+ 	unsigned int portid;
+ 	int ret;
+ 
++	printf("%s:1\n", __func__);
+ 	portid = mnl_socket_get_portid(nl);
+ 
++	printf("%s:2\n", __func__);
+ 	ret = mnl_socket_recvfrom(nl, buf, len);
++	printf("%s:3\n", __func__);
+ 	while (ret > 0) {
+ 		ret = mnl_cb_run(buf, ret, seq, portid, callback, data);
+ 		if (ret <= 0)
+@@ -71,6 +74,7 @@ static int msg_recv(struct mnl_socket *nl, mnl_cb_t callback, void *data, int se
+ 		ret = mnl_socket_recvfrom(nl, buf, len);
+ 	}
+ 
++	printf("%s:4\n", __func__);
+ 	return ret;
+ }
+ 
+@@ -80,15 +84,23 @@ static int msg_query(struct nlmsghdr *nlh, mnl_cb_t callback, void *data)
  	struct mnl_socket *nl;
  	int ret;
  
@@ -35,7 +56,7 @@ index 4677db6..8ceaed5 100644
  	return ret;
  }
  
-@@ -519,10 +527,12 @@ int mdio_common_dump_exec_one(struct mdio_device *dev, int *argc, char ***argv)
+@@ -519,10 +531,12 @@ int mdio_common_dump_exec_one(struct mdio_device *dev, int *argc, char ***argv)
  	uint32_t reg;
  	int err;
  
@@ -48,7 +69,7 @@ index 4677db6..8ceaed5 100644
  	/* Can't emit a loop, since there's no way to pass the (mdio)
  	 * register in a (mdio-netlink) register - so we unroll it. */
  	for (reg = range.start; reg <= range.end; reg++) {
-@@ -533,6 +543,8 @@ int mdio_common_dump_exec_one(struct mdio_device *dev, int *argc, char ***argv)
+@@ -533,6 +547,8 @@ int mdio_common_dump_exec_one(struct mdio_device *dev, int *argc, char ***argv)
  		mdio_prog_push(&prog, INSN(EMIT, REG(0), 0, 0));
  	}
  
@@ -57,7 +78,7 @@ index 4677db6..8ceaed5 100644
  	err = mdio_xfer_timeout(dev->bus, &prog, mdio_common_dump_cb, &range, 10000);
  	free(prog.insns);
  	if (err) {
-@@ -540,6 +552,8 @@ int mdio_common_dump_exec_one(struct mdio_device *dev, int *argc, char ***argv)
+@@ -540,6 +556,8 @@ int mdio_common_dump_exec_one(struct mdio_device *dev, int *argc, char ***argv)
  		return 1;
  	}
  
@@ -66,7 +87,7 @@ index 4677db6..8ceaed5 100644
  	return 0;
  }
  
-@@ -613,17 +627,22 @@ int mdio_xfer_timeout(const char *bus, struct mdio_prog *prog,
+@@ -613,17 +631,23 @@ int mdio_xfer_timeout(const char *bus, struct mdio_prog *prog,
  	struct nlmsghdr *nlh;
  	int err;
  
@@ -77,15 +98,16 @@ index 4677db6..8ceaed5 100644
  
 +	printf("%s:2\n", __func__);
  	mnl_attr_put_strz(nlh, MDIO_NLA_BUS_ID, bus);
++	printf("%s:3\n", __func__);
  	mnl_attr_put(nlh, MDIO_NLA_PROG, prog->len * sizeof(*prog->insns),
  		     prog->insns);
  
-+	printf("%s:3\n", __func__);
++	printf("%s:4\n", __func__);
  	mnl_attr_put_u16(nlh, MDIO_NLA_TIMEOUT, timeout_ms);
  
-+	printf("%s:4\n", __func__);
++	printf("%s:5\n", __func__);
  	err = msg_query(nlh, mdio_xfer_cb, &xfer);
-+	printf("%s:5 xfer.err=%d, err=%d\n", __func__, xfer.err, err);
++	printf("%s:6 xfer.err=%d, err=%d\n", __func__, xfer.err, err);
  	return xfer.err ? : err;
  }
  
