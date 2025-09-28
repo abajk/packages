@@ -1,0 +1,26 @@
+From 298eb33e353db3891f6b07d8225aa4942be4fa61 Mon Sep 17 00:00:00 2001
+From: Aleksander Jan Bajkowski <olek2@wp.pl>
+Date: Sun, 28 Sep 2025 23:31:00 +0200
+Subject: [PATCH] test
+
+---
+ src/mdio/mdio.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/src/mdio/mdio.c b/src/mdio/mdio.c
+index 4677db6..342e85d 100644
+--- a/src/mdio/mdio.c
++++ b/src/mdio/mdio.c
+@@ -623,7 +623,9 @@ int mdio_xfer_timeout(const char *bus, struct mdio_prog *prog,
+ 
+ 	mnl_attr_put_u16(nlh, MDIO_NLA_TIMEOUT, timeout_ms);
+ 
++	printf("%s:1\n", __func__);
+ 	err = msg_query(nlh, mdio_xfer_cb, &xfer);
++	printf("%s:2 xfer.err=%d, err=%d\n", __func__, xfer.err, err);
+ 	return xfer.err ? : err;
+ }
+ 
+-- 
+2.47.3
+
