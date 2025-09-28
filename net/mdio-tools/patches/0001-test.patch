@@ -1,4 +1,4 @@
-From 442dfe21671dac2e176efbbf98bfc1c865f87b36 Mon Sep 17 00:00:00 2001
+From b9bc2ef2edcda096992483cfced3e7685a87e4af Mon Sep 17 00:00:00 2001
 From: Aleksander Jan Bajkowski <olek2@wp.pl>
 Date: Sun, 28 Sep 2025 23:31:00 +0200
 Subject: [PATCH] test
@@ -8,7 +8,7 @@ Subject: [PATCH] test
  1 file changed, 26 insertions(+), 2 deletions(-)
 
 diff --git a/src/mdio/mdio.c b/src/mdio/mdio.c
-index 4677db6..2023d07 100644
+index 4677db6..c5e002f 100644
 --- a/src/mdio/mdio.c
 +++ b/src/mdio/mdio.c
 @@ -16,8 +16,8 @@
@@ -109,7 +109,7 @@ index 4677db6..2023d07 100644
  
 +	printf("%s:2\n", __func__);
  	mnl_attr_put_strz(nlh, MDIO_NLA_BUS_ID, bus);
-+	printf("%s:3 len=%ld, size=%d\n", __func__, prog->len, sizeof(*prog->insns));
++	printf("%s:3 len=%d, size=%ld\n", __func__, prog->len, sizeof(*prog->insns));
  	mnl_attr_put(nlh, MDIO_NLA_PROG, prog->len * sizeof(*prog->insns),
  		     prog->insns);
  
