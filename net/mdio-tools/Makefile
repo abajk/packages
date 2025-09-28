@@ -2,7 +2,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=mdio-tools
 PKG_VERSION:=1.3.1
-PKG_RELEASE:=2
+PKG_RELEASE:=3
 
 PKG_SOURCE_URL:=https://github.com/wkz/mdio-tools
 PKG_SOURCE_PROTO:=git
@@ -29,6 +29,8 @@ endef
 define Package/mdio-tools/description
   mdio-tools Linux MDIO register access
 endef
+
+TARGET_CFLAGS := $(filter-out -O%,$(TARGET_CFLAGS)) -O0 -g
 
 define Package/mdio-tools/install
 	$(INSTALL_DIR) $(1)/usr/bin
