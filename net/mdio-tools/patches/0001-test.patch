@@ -1,14 +1,28 @@
-From 52c011e6c2d8b4f224ea00ad6562f78259a6977c Mon Sep 17 00:00:00 2001
+From a1e94110682213c2478e27c29e3ba1dc684c3f1e Mon Sep 17 00:00:00 2001
 From: Aleksander Jan Bajkowski <olek2@wp.pl>
 Date: Sun, 28 Sep 2025 23:31:00 +0200
 Subject: [PATCH] test
 
 ---
- src/mdio/mdio.c | 31 +++++++++++++++++++++++++++++--
- 1 file changed, 29 insertions(+), 2 deletions(-)
+ kernel/mdio-netlink.c |  2 +-
+ src/mdio/mdio.c       | 36 +++++++++++++++++++++++++++++++++---
+ 2 files changed, 34 insertions(+), 4 deletions(-)
 
+diff --git a/kernel/mdio-netlink.c b/kernel/mdio-netlink.c
+index 56148fa..66f6d4f 100644
+--- a/kernel/mdio-netlink.c
++++ b/kernel/mdio-netlink.c
+@@ -288,7 +288,7 @@ static const struct nla_policy mdio_nl_policy[MDIO_NLA_MAX + 1] = {
+ 	[MDIO_NLA_TIMEOUT] = NLA_POLICY_MAX(NLA_U16, 10 * MSEC_PER_SEC),
+ 	[MDIO_NLA_PROG]    = NLA_POLICY_VALIDATE_FN(NLA_BINARY,
+ 						    mdio_nl_validate_prog,
+-						    0x1000),
++						    0x10000),
+ 	[MDIO_NLA_DATA]    = { .type = NLA_NESTED },
+ 	[MDIO_NLA_ERROR]   = { .type = NLA_S32, },
+ };
 diff --git a/src/mdio/mdio.c b/src/mdio/mdio.c
-index 4677db6..f1fa1be 100644
+index 4677db6..3fd1ed2 100644
 --- a/src/mdio/mdio.c
 +++ b/src/mdio/mdio.c
 @@ -16,8 +16,8 @@
@@ -70,7 +84,20 @@ index 4677db6..f1fa1be 100644
  	return ret;
  }
  
-@@ -519,10 +534,12 @@ int mdio_common_dump_exec_one(struct mdio_device *dev, int *argc, char ***argv)
+@@ -503,8 +518,11 @@ int mdio_common_dump_cb(uint32_t *data, int len, int err, void *_range)
+ 	struct reg_range *range = _range;
+ 	uint32_t reg;
+ 
+-	if (len != (int)(range->end - range->start + 1))
++	printf("%s:1\n", __func__);
++	if (len != (int)(range->end - range->start + 1)) {
++		printf("%s:2\n", __func__);
+ 		return 1;
++	}
+ 
+ 	for (reg = range->start; reg <= range->end; reg++)
+ 		printf("0x%04x: 0x%04x\n", reg, *data++);
+@@ -519,10 +537,12 @@ int mdio_common_dump_exec_one(struct mdio_device *dev, int *argc, char ***argv)
  	uint32_t reg;
  	int err;
  
@@ -83,7 +110,7 @@ index 4677db6..f1fa1be 100644
  	/* Can't emit a loop, since there's no way to pass the (mdio)
  	 * register in a (mdio-netlink) register - so we unroll it. */
  	for (reg = range.start; reg <= range.end; reg++) {
-@@ -533,6 +550,8 @@ int mdio_common_dump_exec_one(struct mdio_device *dev, int *argc, char ***argv)
+@@ -533,6 +553,8 @@ int mdio_common_dump_exec_one(struct mdio_device *dev, int *argc, char ***argv)
  		mdio_prog_push(&prog, INSN(EMIT, REG(0), 0, 0));
  	}
  
@@ -92,7 +119,7 @@ index 4677db6..f1fa1be 100644
  	err = mdio_xfer_timeout(dev->bus, &prog, mdio_common_dump_cb, &range, 10000);
  	free(prog.insns);
  	if (err) {
-@@ -540,6 +559,8 @@ int mdio_common_dump_exec_one(struct mdio_device *dev, int *argc, char ***argv)
+@@ -540,6 +562,8 @@ int mdio_common_dump_exec_one(struct mdio_device *dev, int *argc, char ***argv)
  		return 1;
  	}
  
@@ -101,7 +128,7 @@ index 4677db6..f1fa1be 100644
  	return 0;
  }
  
-@@ -613,17 +634,23 @@ int mdio_xfer_timeout(const char *bus, struct mdio_prog *prog,
+@@ -613,17 +637,23 @@ int mdio_xfer_timeout(const char *bus, struct mdio_prog *prog,
  	struct nlmsghdr *nlh;
  	int err;
  
