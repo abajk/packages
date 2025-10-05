@@ -1,4 +1,4 @@
-From 6804de604d1ce838f1e54b4754af58986d3872b8 Mon Sep 17 00:00:00 2001
+From f50ea0ec63ceaa9982adefffdeabe86dcba657c0 Mon Sep 17 00:00:00 2001
 From: Aleksander Jan Bajkowski <olek2@wp.pl>
 Date: Sun, 28 Sep 2025 23:31:00 +0200
 Subject: [PATCH] test
@@ -22,7 +22,7 @@ index 56148fa..66f6d4f 100644
  	[MDIO_NLA_ERROR]   = { .type = NLA_S32, },
  };
 diff --git a/src/mdio/mdio.c b/src/mdio/mdio.c
-index 4677db6..cc04e8f 100644
+index 4677db6..1863ab3 100644
 --- a/src/mdio/mdio.c
 +++ b/src/mdio/mdio.c
 @@ -16,8 +16,8 @@
@@ -139,7 +139,7 @@ index 4677db6..cc04e8f 100644
  
 +	printf("%s:2\n", __func__);
  	mnl_attr_put_strz(nlh, MDIO_NLA_BUS_ID, bus);
-+	printf("%s:3 len=%d, len=%d, size=%ld\n", __func__, len, prog->len, sizeof(*prog->insns));
++	printf("%s:3 len=%ld, len=%d, size=%ld\n", __func__, len, prog->len, sizeof(*prog->insns));
 +	if (prog->len * sizeof(*prog->insns) > len)
 +		return -ENOMEM;
  	mnl_attr_put(nlh, MDIO_NLA_PROG, prog->len * sizeof(*prog->insns),
