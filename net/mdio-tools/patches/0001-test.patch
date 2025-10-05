@@ -1,12 +1,12 @@
-From a1e94110682213c2478e27c29e3ba1dc684c3f1e Mon Sep 17 00:00:00 2001
+From 6804de604d1ce838f1e54b4754af58986d3872b8 Mon Sep 17 00:00:00 2001
 From: Aleksander Jan Bajkowski <olek2@wp.pl>
 Date: Sun, 28 Sep 2025 23:31:00 +0200
 Subject: [PATCH] test
 
 ---
  kernel/mdio-netlink.c |  2 +-
- src/mdio/mdio.c       | 36 +++++++++++++++++++++++++++++++++---
- 2 files changed, 34 insertions(+), 4 deletions(-)
+ src/mdio/mdio.c       | 38 +++++++++++++++++++++++++++++++++++---
+ 2 files changed, 36 insertions(+), 4 deletions(-)
 
 diff --git a/kernel/mdio-netlink.c b/kernel/mdio-netlink.c
 index 56148fa..66f6d4f 100644
@@ -22,7 +22,7 @@ index 56148fa..66f6d4f 100644
  	[MDIO_NLA_ERROR]   = { .type = NLA_S32, },
  };
 diff --git a/src/mdio/mdio.c b/src/mdio/mdio.c
-index 4677db6..3fd1ed2 100644
+index 4677db6..cc04e8f 100644
 --- a/src/mdio/mdio.c
 +++ b/src/mdio/mdio.c
 @@ -16,8 +16,8 @@
@@ -128,7 +128,7 @@ index 4677db6..3fd1ed2 100644
  	return 0;
  }
  
-@@ -613,17 +637,23 @@ int mdio_xfer_timeout(const char *bus, struct mdio_prog *prog,
+@@ -613,17 +637,25 @@ int mdio_xfer_timeout(const char *bus, struct mdio_prog *prog,
  	struct nlmsghdr *nlh;
  	int err;
  
@@ -139,7 +139,9 @@ index 4677db6..3fd1ed2 100644
  
 +	printf("%s:2\n", __func__);
  	mnl_attr_put_strz(nlh, MDIO_NLA_BUS_ID, bus);
-+	printf("%s:3 len=%d, size=%ld\n", __func__, prog->len, sizeof(*prog->insns));
++	printf("%s:3 len=%d, len=%d, size=%ld\n", __func__, len, prog->len, sizeof(*prog->insns));
++	if (prog->len * sizeof(*prog->insns) > len)
++		return -ENOMEM;
  	mnl_attr_put(nlh, MDIO_NLA_PROG, prog->len * sizeof(*prog->insns),
  		     prog->insns);
  
